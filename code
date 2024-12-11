@@ -1,0 +1,246 @@
+#####################################
+#      Intro to ML Traning - R      #
+#####################################
+
+
+# Set the working directory
+setwd("~/datasets/titanic")
+
+# from web content
+
+# Import the training set: train
+train <- read.csv("~/datasets/titanic/train.csv")
+# viewing the "train" dataframe in raw format
+train
+# viewing the "train" dataframe in table format
+View(train)
+
+# Import the testing set: test
+test <- read.csv("~/datasets/titanic/test.csv")
+# Print test dataframe to the console
+test
+# view the test dataframe
+View(test)
+
+# Let's do some exploratory data analysis
+# How many people in your training set survived?
+table(train$Survived) 
+
+# what is the proportions of people who survived? 
+prop.table(table(train$Survived))
+
+# how about the gender in two way comparison who survived? 
+table(train$Sex, train$Survived)
+
+# If you want to access a single column in the dataframe use $ after the dataframe
+# If you want to know what is the fate of the people in the train dataset?
+table(train$Survived)
+
+# what about the proportion? in percentage
+prop.table(table(train$Survived))
+
+# Visual representation of survived in train dataset
+barplot(table(train$Survived), xlab="Survived", ylab="People", main="Train Data Survival")
+
+# Considering everyone died in test dataset, let's make our first prediction
+# rep command the value 0 418 times in the newly created $Survived column
+test$Survived <- rep(0, 418)
+
+# We need to submit a csv file with the PassengerId and Survived predictions to Kaggle
+# write.csv fuction writes the prediction dataframe out to a CSV file, excluding the row numbers
+prediction <- data.frame(PassengerId = test$PassengerId, Survived = test$Survived)
+write.csv(prediction, file = "1stprediction.csv", row.names = FALSE)
+
+
+train[train == ""] <- NA
+library(Amelia)
+missmap(train, main="Titanic Training Data - Missings Map",
+        col=c("yellow", "black"), legend=TRUE)
+
+
+# barplot for all the variables 
+# How many survived?
+barplot(table(train$Survived),
+        names.arg = c("Perished", "Survived"),
+        main="Survived (passenger fate)", col="black")
+
+# Passengers travelling in different classes
+barplot(table(train$Pclass), 
+        names.arg = c("first", "second", "third"),
+        main="Pclass (passenger traveling class)", col="firebrick")
+
+# How many survived gender-wise?
+barplot(table(train$Sex), main="Sex (gender)", col="darkviolet")
+
+# Age distribution in the Titanic
+hist(train$Age, main="Age", xlab = NULL, col="brown")
+
+# How in group people (sibling+spouse) were traveling?
+barplot(table(train$SibSp), main="SibSp (siblings + spouse aboard)", col="darkblue")
+
+# How parents and children were traveling? 
+barplot(table(train$Parch), main="Parch (parents + kids aboard)", col="gray50")
+
+# What was the fair most people paid for Titanic?
+hist(train$Fare, main="Fare (fee paid for ticket[s])", xlab = NULL, col="darkgreen")
+
+# Where most people Embarked?
+barplot(table(train$Embarked), 
+        names.arg = c("Cherbourg", "Queenstown", "Southampton"),
+        main="Embarked (port of embarkation)", col="sienna")
+
+table(train$Sex)
+
+prop.table (table(train$Sex, train$Survived),1) * 100
+
+barplot (table(train$Sex), xlab="Passenger", ylab="People", main="Train Data Passenger")
+
+test$Survived <- 0
+test$Survived [test$Sex == 'female'] <- 1
+
+secondprediction <- data.frame(PassengerId = test$PassengerId, Survived = test$Survived)
+
+write.csv(secondprediction, file = "2ndprediction.csv", row.names = FALSE)
+
+train$Fare2 <- '30+'
+train$Fare2[train$Fare < 30 & train$Fare >= 20] <- '20-30'
+train$Fare2[train$Fare < 20 & train$Fare >= 10] <- '10-20'
+train$Fare2[train$Fare < 10] <- '<10'
+
+aggregate(Survived ~ Fare2 + Pclass + Sex, data=train, FUN=sum)
+aggregate(Survived ~ Fare2 + Pclass + Sex, data=train, FUN=length)
+aggregate(Survived ~ Fare2 + Pclass + Sex, data=train, FUN=function(x) {sum(x)/length(x)})
+
+test$Survived <- 0
+test$Survived[test$Sex == 'female'] <- 1 
+test$Survived[test$Sex == 'female' & test$Pclass == 3 & test$Fare >= 20] <- 0
+
+prediction3rd <- data.frame (test$PassengerId, test$Survived)
+names (prediction3rd) <- c("PassengerId","Survived")
+rownames (prediction3rd) <- NULL
+write.csv (prediction3rd, file = "prediction3.csv", row.names=FALSE)
+
+
+install.packages('rattle')
+install.packages('rpart.plot')
+install.packages('RColorBrewer')
+
+
+library(rpart)
+library(rattle)
+library(rpart.plot)
+library(RColorBrewer)
+
+
+mytree1 <- rpart(Survived ~ Pclass + Age, data=train, method = "class")
+fancyRpartPlot(mytree1)
+
+mytree3 <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked, data=train, method="class")
+
+plot(mytree3)
+text(mytree3)
+fancyRpartPlot(mytree3)
+
+prediction4th <- predict(mytree3, test, type = "class")
+prediction4th
+prediction4 <- data.frame(PassengerId = test$PassengerId, Survived = prediction4th)
+
+write.csv(prediction4, file = "tree1.csv", row.names = FALSE)
+
+
+train$Name[1]
+test$Survived <- NA
+
+library(dplyr)
+combined_set <- bind_rows(train, test)
+combined_set$Name <- as.character(combined_set$Name)
+
+
+combined_set$Child[combined_set$Age < 14] <- 'Child'
+combined_set$Child[combined_set$Age >= 14] <- 'Adult'
+
+table(combined_set$Child, combined_set$Survived)
+
+combined_set$Child <- factor(combined_set$Child)
+combined_set$child
+
+combined_set$Mother <- 'Not Mother'
+combined_set$Mother[combined_set$Sex == 'female' & combined_set$Parch > 0 & combined_set$Age > 18] <- 'Mother'
+table(combined_set$Mother, combined_set$Survived)
+combined_set$Mother <- factor(combined_set$Mother)
+
+
+train$Name[1]
+train$Name
+
+
+strsplit(combined_set$Name[1], split='[,.]')
+strsplit(combined_set$Name[1], split='[,.]')[[1]]
+strsplit(combined_set$Name[1], split='[,.]')[[1]][2]
+
+
+combined_set$Title <- sapply(combined_set$Name, FUN=function(x) {strsplit(x, split='[,.]')[[1]][2]})
+combined_set$Title <- sub(' ', '', combined_set$Title)
+
+table(combined_set$Title)
+
+combined_set$Title[combined_set$Title %in% c('Mme', 'Mlle')] <- 'Mlle'
+combined_set$Title[combined_set$Title %in% c('Capt', 'Don', 'Major', 'Sir')] <- 'Sir'
+combined_set$Title[combined_set$Title %in% c('Dona', 'Lady', 'the Countess', 'Jonkheer')] <- 'Lady'
+
+
+combined_set$Title <- factor(combined_set$Title)
+
+
+combined_set$Mother <- 'Not Mother'
+combined_set$Mother[combined_set$Sex == 'female' & combined_set$Parch > 0 & combined_set$Age > 18 & combined_set$Title != 'Miss'] <- 'Mother'
+combined_set$Cabin[1:20]
+combined_set$Cabin <- as.character(combined_set$Cabin)
+
+strsplit(combined_set$Cabin[2], NULL)[[1]]
+
+combined_set$Deck<-factor(sapply(combined_set$Cabin, function(x) strsplit(x, NULL)[[1]][1]))
+
+combined_set$Fare_type[combined_set$Fare<50]<-"low"
+combined_set$Fare_type[combined_set$Fare>50 & combined_set$Fare<=100]<-"med1"
+combined_set$Fare_type[combined_set$Fare>100 & combined_set$Fare<=150]<-"med2"
+combined_set$Fare_type[combined_set$Fare>150 & combined_set$Fare<=500]<-"high"
+combined_set$Fare_type[combined_set$Fare>500]<-"vhigh"
+
+
+aggregate(Survived~Fare_type, data=combined_set,mean)
+combined_set$FamilySize <- combined_set$SibSp + combined_set$Parch + 1
+combined_set$Surname <- sapply(combined_set$Name, FUN=function(x) {strsplit(x, split='[,.]')[[1]][1]})
+combined_set$FamilyID <- paste(as.character(combined_set$FamilySize), combined_set$Surname, sep="")
+
+combined_set$FamilyID[combined_set$FamilySize <= 2] <- 'Small'
+
+combined_set$FamilySizeGroup[combined_set$FamilySize == 1] <- 'single'
+combined_set$FamilySizeGroup[combined_set$FamilySize < 5 & combined_set$FamilySize > 1] <- 'Smaller'
+combined_set$FamilySizeGroup[combined_set$FamilySize > 4] <- 'large'
+
+
+mosaicplot(table(combined_set$FamilySizeGroup, combined_set$Survived), main='Survival affected by Family Size ', shade=TRUE)
+
+
+table(combined_set$FamilyID)
+table(combined_set$FamilySizeGroup)
+
+combined_set$FamilyID <- factor(combined_set$FamilyID)
+combined_set$FamilySizeGroup <- factor(combined_set$FamilySizeGroup)
+
+
+train <- combined_set[1:891,]
+test <- combined_set[892:1309,]
+
+
+fit <- rpart(Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked + Title + FamilySize + FamilyID,
+             data=train, method="class")
+
+fancyRpartPlot(fit)
+
+prediction_5th <- predict(fit, test, type = "class")
+
+submit <- data.frame(PassengerId = test$PassengerId, Survived = prediction_5th)
+
+write.csv(submit, file = "prediction5th.csv", row.names = FALSE)
